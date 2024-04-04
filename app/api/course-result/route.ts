@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
         courseResults: true,
       },
     });
-    const mappedResult = result.flatMap((course) =>
+    const mappedResult = result.flatMap((course: any) =>
       courseResultMapping(course)
     );
     return nextReturn(mappedResult, 200, undefined, headers);
