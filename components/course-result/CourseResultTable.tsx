@@ -47,7 +47,8 @@ export default function CourseResultTable({
     {
       title: "Test Month",
       dataIndex: "testMonth",
-      sorter: (a, b) => a.year - b.year,
+      sorter: (a, b) => a.testMonth - b.testMonth,
+      render: (month: number) => ("0" + month).slice(-2),
     },
     {
       title: "Result",

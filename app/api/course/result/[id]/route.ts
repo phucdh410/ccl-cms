@@ -2,6 +2,9 @@ import prisma from "@/server/database";
 import { nextReturn } from "@/utils/api";
 import { Prisma } from "@prisma/client";
 import { NextRequest } from "next/server";
+import { kv } from "@vercel/kv";
+import { CACHE_KEY } from "@/server/constant";
+import supabase, { bucketName } from "@/supbase/supabase";
 
 export async function GET(_: NextRequest, context: any) {
   const id = context.params.id;
@@ -36,6 +39,7 @@ export async function PUT(request: NextRequest, context: any) {
       },
       data,
     });
+    await kv.del(CACHE_KEY.COURSE_RESULT);
     return nextReturn(result);
   } catch (err: any) {
     return nextReturn(err?.message || err, 500, "INTERNAL_SERVER_ERROR");
@@ -57,8 +61,17 @@ export async function DELETE(_: NextRequest, context: any) {
         id,
       },
     });
+    const paths: string[] = result.galleryImgs.map(img => filterFileDir(img));
+    await supabase.storage.from(bucketName).remove(paths)
+    await kv.del(CACHE_KEY.COURSE_RESULT);
     return nextReturn(result);
   } catch (err: any) {
     return nextReturn(err?.message || err, 500, "INTERNAL_SERVER_ERROR");
   }
 }
+
+const filterFileDir = (path: string) => {
+  const match = path.match(/CCL_BUCKET\/(.+)$/);
+  if (match) return match[1];
+  return path
+} 

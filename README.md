@@ -1,4 +1,3 @@
-Run the development server:
+Enter when CI/CD
 
-```bash
-npm run dev
+npm i && npm run db:generate

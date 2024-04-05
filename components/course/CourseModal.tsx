@@ -94,6 +94,13 @@ export default function CourseModal(props: CourseModalProps) {
         <Form.Item label="Name" name="courseName" rules={[{ required: true }]}>
           <Input placeholder="Course's name" />
         </Form.Item>
+        <Form.Item
+          label="Date Display"
+          name="dateDisplay"
+          rules={[{ required: true }]}
+        >
+          <Input placeholder="04.2023, 02.2023, 09.2022 (you must use this format)" />
+        </Form.Item>
       </Form>
     </Modal>
   );

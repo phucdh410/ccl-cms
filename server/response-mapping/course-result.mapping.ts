@@ -4,6 +4,7 @@ export const courseResultMapping = (course: any) => {
   }
 
   const result = course.courseResults.map((item: any) => {
+    const modifiedGalleryImgs = item.galleryImgs?.filter((img: any) => img !== item?.imageSrc);
     return {
       imageSrc: item.imageSrc || course.imageSrc,
       studentName: item.studentName || "",
@@ -12,7 +13,7 @@ export const courseResultMapping = (course: any) => {
       resultGroup: item.resultGroup || "",
       resultComment: item.resultComment || "",
       url: item.url || "",
-      galleryImgs: item.galleryImgs || [],
+      galleryImgs: [item?.imageSrc, ...modifiedGalleryImgs] || [],
       TestMonth: ("0" + item.testMonth).slice(-2),
       TestYear: item.year ? `Results${item.year}` : "",
     };

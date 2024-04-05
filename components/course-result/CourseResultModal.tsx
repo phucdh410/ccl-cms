@@ -3,7 +3,7 @@ import supabase, { bucketName, supabaseUrl } from "@/supbase/supabase";
 import { UploadOutlined } from "@ant-design/icons";
 import { Button, Form, Input, InputNumber, Modal, Upload } from "antd";
 import { RcFile, UploadFile } from "antd/es/upload";
-import { use, useCallback, useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 
 interface CourseResultModalProps {
   open: boolean;
@@ -39,6 +39,9 @@ export default function CourseResultModal({
     const values = await form.validateFields();
     values.testMonth = Number(values.testMonth);
     values.year = values.year.toString();
+    if (galleryImgs.length > 0) {
+      values.imageSrc = galleryImgs[0];
+    }
     setConfirmLoading(true);
     try {
       if (mode === "create") {
@@ -93,11 +96,22 @@ export default function CourseResultModal({
   };
 
   const handleUploadImage = async (file: RcFile) => {
+    const studentName: string = form.getFieldValue('studentName')
+    if (!studentName){
+      appContext.openNotification(
+        "warning",
+        "Warning",
+        "Please enter student name"
+      );
+      return;
+    }
+    
     try {
       setUploading(true);
+      const fileDir = `/${studentName.toLowerCase()}/${file.name}`;
       const { data, error } = await supabase.storage
         .from(bucketName)
-        .upload(`${file.name}`, file, {
+        .upload(fileDir, file, {
           cacheControl: "3600",
           upsert: true,
           contentType: file.type,
@@ -112,14 +126,6 @@ export default function CourseResultModal({
     } finally {
       setUploading(false);
     }
-  };
-
-  const handleUploadMainImage = async (file: RcFile) => {
-    const url = await handleUploadImage(file);
-    if (!url) return;
-    form.setFieldsValue({ imageSrc: url });
-    appendGalleryImg(url);
-    appendFile({ uid: url, url, name: url });
   };
 
   const handleUploadGalleryImages = async (file: RcFile) => {
@@ -262,28 +268,6 @@ export default function CourseResultModal({
         <Form.Item label="Url" name="url">
           <Input placeholder="#" />
         </Form.Item>
-        <Form.Item
-          label="Main Image"
-          name="imageSrc"
-          rules={[{ required: true }]}
-        >
-          <Input placeholder="Patse your image url here or Upload a new one" />
-        </Form.Item>
-        <Upload
-          accept="image/*"
-          multiple={false}
-          showUploadList={false}
-          beforeUpload={(file) => handleUploadMainImage(file)}
-          disabled={uploading}
-        >
-          <Button
-            loading={uploading}
-            className="mt-1"
-            icon={<UploadOutlined />}
-          >
-            Upload Main Image
-          </Button>
-        </Upload>
         <Upload
           action="/api/storage/upload"
           accept="image/*"
