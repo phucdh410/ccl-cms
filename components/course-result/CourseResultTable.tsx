@@ -129,6 +129,7 @@ export default function CourseResultTable({
           "Success",
           "Course result deleted successfully"
         );
+
         onRefetch();
       } else {
         appContext.openNotification("error", "Error", "Something went wrong");

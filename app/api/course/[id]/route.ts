@@ -1,5 +1,6 @@
 import { CACHE_KEY } from "@/server/constant";
 import prisma from "@/server/database";
+import supabase, { bucketName } from "@/supbase/supabase";
 import { nextReturn } from "@/utils/api";
 import { Prisma } from "@prisma/client";
 import { kv } from "@vercel/kv";
@@ -38,8 +39,6 @@ export async function GET(request: NextRequest, context: any) {
 export async function PUT(request: NextRequest, context: any) {
   const id = context.params.id;
 
-  console.log("Try uploading", id);
-
   try {
     const check = await prisma.course.findUnique({
       where: {
@@ -48,10 +47,7 @@ export async function PUT(request: NextRequest, context: any) {
     });
     if (!check) return nextReturn("Course Not found", 400, "NOT_FOUND");
 
-    console.log("Check", check);
-
     const input = (await request.json()) as Prisma.CourseUpdateInput;
-    console.log("input", input);
     const result = await prisma.course.update({
       where: {
         id,
@@ -61,8 +57,6 @@ export async function PUT(request: NextRequest, context: any) {
     // await kv.del(CACHE_KEY.COURSE_RESULT);
     return nextReturn(result);
   } catch (err: any) {
-    console.log("Update error", err);
-
     return nextReturn(err?.message || err, 500, "INTERNAL_SERVER_ERROR");
   }
 }
@@ -91,6 +85,23 @@ export async function DELETE(request: NextRequest, context: any) {
         },
       }),
     ]);
+
+    if (course?.galleryImgs?.length) {
+      //DELETE ALL FILES IN FOLDER
+      const paths: string[] = [];
+      const regex = new RegExp(`https://.+?/${bucketName}/(.+)$`);
+      course.galleryImgs.forEach((e) => {
+        const match = e.match(regex);
+        if (match) paths.push(match[1]);
+      });
+      await supabase.storage.from(bucketName).remove(paths);
+
+      //DELETE EMPTY FOLDER
+      const parts = course.galleryImgs[0].split("/");
+      const folderPath = parts[parts.length - 2];
+      await supabase.storage.from(bucketName).remove([folderPath]);
+    }
+
     return nextReturn(course);
   } catch (err: any) {
     return nextReturn(err?.message || err, 500, "INTERNAL_SERVER_ERROR");

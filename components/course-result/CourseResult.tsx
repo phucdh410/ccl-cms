@@ -23,7 +23,6 @@ export default function CourseResult({ courseId }: CourseResultProps) {
 
   const fetchCourseResults = useCallback(async () => {
     try {
-      console.log("fetching course results", courseId);
       setLoading(true);
       const response = await fetch(`/api/course/${courseId}`).then((res) =>
         res.json()

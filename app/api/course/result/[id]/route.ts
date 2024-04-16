@@ -66,9 +66,24 @@ export async function DELETE(_: NextRequest, context: any) {
         id,
       },
     });
-    const paths: string[] = result.galleryImgs.map((img) => filterFileDir(img));
-    await supabase.storage.from(bucketName).remove(paths);
-    await kv.del(CACHE_KEY.COURSE_RESULT);
+
+    if (result?.galleryImgs?.length) {
+      //DELETE ALL FILES IN FOLDER
+      const paths: string[] = [];
+      const regex = new RegExp(`https://.+?/${bucketName}/(.+)$`);
+      result.galleryImgs.forEach((e) => {
+        const match = e.match(regex);
+        if (match) paths.push(match[1]);
+      });
+      await supabase.storage.from(bucketName).remove(paths);
+
+      //DELETE EMPTY FOLDER
+      const parts = result.galleryImgs[0].split("/");
+      const folderPath = parts[parts.length - 2];
+      await supabase.storage.from(bucketName).remove([folderPath]);
+    }
+    // await kv.del(CACHE_KEY.COURSE_RESULT);
+
     return nextReturn(result);
   } catch (err: any) {
     return nextReturn(err?.message || err, 500, "INTERNAL_SERVER_ERROR");
