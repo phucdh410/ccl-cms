@@ -19,15 +19,18 @@ export default function CourseModal(props: CourseModalProps) {
   const [uploading, setUploading] = useState(false);
   const [galleryImgs, setGalleryImgs] = useState<string[]>([]);
   const [fileList, setFileList] = useState<UploadFile[]>([]);
+  const [deletedFile, setDeletedFile] = useState<string[]>([]);
 
   const { open, mode } = props;
 
   const handleCancel = () => {
     props.setOpen(false);
+    setDeletedFile([]);
   };
 
   const handleOk = async () => {
     const values = await form.validateFields();
+
     if (values?.files) delete values.files;
 
     setConfirmLoading(true);
@@ -37,7 +40,14 @@ export default function CourseModal(props: CourseModalProps) {
       } else if (mode === "update") {
         await onUpdate(values);
       }
-      props.setOpen(false);
+
+      if (deletedFile.length) {
+        const { data, error } = await supabase.storage
+          .from(bucketName)
+          .remove(deletedFile);
+      }
+
+      handleCancel();
     } catch (error) {
       console.error(error);
     } finally {
@@ -67,8 +77,6 @@ export default function CourseModal(props: CourseModalProps) {
       const id = props?.data?.id;
       if (!id) throw new Error("CourseId is required");
 
-      console.log("Try update");
-
       await fetch(`/api/course/${id}`, {
         method: "PUT",
         body: JSON.stringify({ ...values, galleryImgs }),
@@ -84,19 +92,9 @@ export default function CourseModal(props: CourseModalProps) {
         "Course update successfully"
       );
     } catch (error) {
-      console.log("Error", error);
-
       console.error(error);
     }
   };
-
-  useEffect(() => {
-    if (!props.open) {
-      form.resetFields();
-    } else if (props?.data) {
-      form.setFieldsValue(props.data);
-    }
-  }, [props.open]);
 
   const uploadButton = (
     <button style={{ border: 0, background: "none" }} type="button">
@@ -108,8 +106,6 @@ export default function CourseModal(props: CourseModalProps) {
   const handleUploadImage = async (file: RcFile) => {
     const courseName: string = form.getFieldValue("courseName");
 
-    console.log("Course name", courseName);
-
     if (!courseName) {
       appContext.openNotification(
         "warning",
@@ -120,12 +116,10 @@ export default function CourseModal(props: CourseModalProps) {
     }
 
     try {
-      console.log("Try upload");
-
       setUploading(true);
       setConfirmLoading(true);
 
-      const fileDir = `/${file.name}`;
+      const fileDir = `/COURSE-${courseName.toLowerCase()}/${file.name}`;
       const { data, error } = await supabase.storage
         .from(bucketName)
         .upload(fileDir, file, {
@@ -134,16 +128,12 @@ export default function CourseModal(props: CourseModalProps) {
           contentType: file.type,
         });
 
-      console.log("Data", data);
-
       if (data) {
         return `${supabaseUrl}/storage/v1/object/public/${bucketName}/${data.path}`;
       } else {
         throw new Error(JSON.stringify(error));
       }
     } catch (error) {
-      console.log("Error", error);
-
       console.error(error);
     } finally {
       setConfirmLoading(false);
@@ -154,18 +144,19 @@ export default function CourseModal(props: CourseModalProps) {
   const handleUploadGalleryImages = async (file: RcFile) => {
     const url = await handleUploadImage(file);
 
-    console.log("Before uploads", url);
-
     if (!url) return true;
 
     appendGalleryImg(url);
     appendFile({ uid: url, url, name: url });
 
-    console.log("Upload success");
     return false;
   };
 
   const handleRemoveImage = (file: UploadFile) => {
+    const regex = new RegExp(`https://.+?/${bucketName}/(.+)$`);
+    const _path = file.url?.match(regex)?.[1];
+    _path && setDeletedFile((prev) => [...prev, _path]);
+
     setGalleryImgs((prev) => prev.filter((img) => img !== file.url));
     setFileList((prev) => prev.filter((f) => f.uid !== file.uid));
   };
@@ -195,9 +186,13 @@ export default function CourseModal(props: CourseModalProps) {
   };
 
   useEffect(() => {
-    if (!props?.data) return;
-    loadGalleryImgs();
-  }, [props?.data]);
+    if (!props.open) {
+      form.resetFields();
+    } else if (props?.data) {
+      form.setFieldsValue(props.data);
+      loadGalleryImgs();
+    }
+  }, [props.open, props?.data]);
 
   return (
     <Modal

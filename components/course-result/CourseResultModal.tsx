@@ -30,18 +30,23 @@ export default function CourseResultModal({
   const [fileList, setFileList] = useState<UploadFile[]>([]);
   const [formLoading, setFormLoading] = useState(false);
   const [data, setData] = useState<any>();
+  const [deletedFile, setDeletedFile] = useState<string[]>([]);
 
   const handleCancel = () => {
     setOpen(false);
+    setDeletedFile([]);
   };
 
   const handleOk = async () => {
     const values = await form.validateFields();
+
     values.testMonth = Number(values.testMonth);
     values.year = values.year.toString();
+
     if (galleryImgs.length > 0) {
       values.imageSrc = galleryImgs[0];
     }
+
     setConfirmLoading(true);
     try {
       if (mode === "create") {
@@ -49,7 +54,14 @@ export default function CourseResultModal({
       } else if (mode === "update") {
         await handleUpdateCourseResult(values);
       }
-      setOpen(false);
+
+      if (deletedFile.length) {
+        const { data, error } = await supabase.storage
+          .from(bucketName)
+          .remove(deletedFile);
+      }
+
+      handleCancel();
     } catch (err) {
       console.error("err", err);
     } finally {
@@ -106,6 +118,7 @@ export default function CourseResultModal({
 
   const handleUploadImage = async (file: RcFile) => {
     const studentName: string = form.getFieldValue("studentName");
+
     if (!studentName) {
       appContext.openNotification(
         "warning",
@@ -117,6 +130,7 @@ export default function CourseResultModal({
 
     try {
       setUploading(true);
+
       const fileDir = `/${studentName.toLowerCase()}/${file.name}`;
       const { data, error } = await supabase.storage
         .from(bucketName)
@@ -139,13 +153,20 @@ export default function CourseResultModal({
 
   const handleUploadGalleryImages = async (file: RcFile) => {
     const url = await handleUploadImage(file);
+
     if (!url) return true;
+
     appendGalleryImg(url);
     appendFile({ uid: url, url, name: url });
+
     return false;
   };
 
   const handleRemoveImage = (file: UploadFile) => {
+    const regex = new RegExp(`https://.+?/${bucketName}/(.+)$`);
+    const _path = file.url?.match(regex)?.[1];
+    _path && setDeletedFile((prev) => [...prev, _path]);
+
     setGalleryImgs((prev) => prev.filter((img) => img !== file.url));
     setFileList((prev) => prev.filter((f) => f.uid !== file.uid));
   };
