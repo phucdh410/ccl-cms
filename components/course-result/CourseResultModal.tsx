@@ -59,45 +59,54 @@ export default function CourseResultModal({
   };
 
   const handleCreateCourseResult = async (values: any) => {
-    const body = {
-      ...values,
-      galleryImgs,
-      Course: {
-        connect: {
-          id: courseId,
+    try {
+      const body = {
+        ...values,
+        galleryImgs,
+        Course: {
+          connect: {
+            id: courseId,
+          },
         },
-      },
-    };
-    await fetch("/api/course/result", {
-      method: "POST",
-      body: JSON.stringify(body),
-    });
-    appContext.openNotification(
-      "success",
-      "Success",
-      "Course's Result created successfully"
-    );
+      };
+      await fetch("/api/course/result", {
+        method: "POST",
+        body: JSON.stringify(body),
+      }).then((res) => res.json());
+      appContext.openNotification(
+        "success",
+        "Success",
+        "Course's Result created successfully"
+      );
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   const handleUpdateCourseResult = async (values: any) => {
-    const body = {
-      ...values,
-      galleryImgs,
-    };
-    await fetch(`/api/course/result/${data.id}`, {
-      method: "PUT",
-      body: JSON.stringify(body),
-    });
-    appContext.openNotification(
-      "success",
-      "Success",
-      "Course's Result updated successfully"
-    );
+    try {
+      const body = {
+        ...values,
+        galleryImgs,
+      };
+      await fetch(`/api/course/result/${data.id}`, {
+        method: "PUT",
+        body: JSON.stringify(body),
+      }).then((res) => res.json());
+
+      appContext.openNotification(
+        "success",
+        "Success",
+        "Course's Result updated successfully"
+      );
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   const handleUploadImage = async (file: RcFile) => {
-    const studentName: string = form.getFieldValue('studentName')
-    if (!studentName){
+    const studentName: string = form.getFieldValue("studentName");
+    if (!studentName) {
       appContext.openNotification(
         "warning",
         "Warning",
@@ -105,7 +114,7 @@ export default function CourseResultModal({
       );
       return;
     }
-    
+
     try {
       setUploading(true);
       const fileDir = `/${studentName.toLowerCase()}/${file.name}`;
@@ -130,9 +139,10 @@ export default function CourseResultModal({
 
   const handleUploadGalleryImages = async (file: RcFile) => {
     const url = await handleUploadImage(file);
-    if (!url) return;
+    if (!url) return true;
     appendGalleryImg(url);
     appendFile({ uid: url, url, name: url });
+    return false;
   };
 
   const handleRemoveImage = (file: UploadFile) => {
@@ -232,7 +242,7 @@ export default function CourseResultModal({
         >
           <Input placeholder="Occupation" />
         </Form.Item>
-        <Form.Item
+        {/* <Form.Item
           label="Test month"
           name="testMonth"
           rules={[{ required: true }]}
@@ -243,6 +253,13 @@ export default function CourseResultModal({
             max={12}
             placeholder="Test month"
           />
+        </Form.Item> */}
+        <Form.Item
+          label="Test time"
+          name="testTime"
+          rules={[{ required: true }]}
+        >
+          <Input className="w-full" placeholder="Test time (Q1/Q2/Q3/Q4)" />
         </Form.Item>
         <Form.Item label="Result" name="result" rules={[{ required: true }]}>
           <Input placeholder="60/80" />

@@ -1,10 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import { Layout } from "antd";
-import Sider from "antd/es/layout/Sider";
-import Sidebar from "@/components/Sidebar";
-import { Content } from "antd/es/layout/layout";
+import { AuthCheckProvider } from "@/components/auth/AuthCheckProvider";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -21,14 +18,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <Layout className="overflow-hidden">
-          <Sider width="20%">
-            <Sidebar />
-          </Sider>
-          <Layout>
-            <Content>{children}</Content>
-          </Layout>
-        </Layout>
+        <AuthCheckProvider>{children}</AuthCheckProvider>
       </body>
     </html>
   );

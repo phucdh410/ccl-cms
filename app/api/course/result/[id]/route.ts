@@ -23,26 +23,31 @@ export async function GET(_: NextRequest, context: any) {
 }
 
 export async function PUT(request: NextRequest, context: any) {
-  const id = context.params.id;
-  const data = (await request.json()) as Prisma.CourseResultUpdateInput;
   try {
-    const check = await prisma.courseResult.findUnique({
-      where: {
-        id,
-      },
-    });
-    if (!check)
-      return nextReturn("Course's Result Not found", 400, "NOT_FOUND");
-    const result = await prisma.courseResult.update({
-      where: {
-        id,
-      },
-      data,
-    });
-    await kv.del(CACHE_KEY.COURSE_RESULT);
-    return nextReturn(result);
-  } catch (err: any) {
-    return nextReturn(err?.message || err, 500, "INTERNAL_SERVER_ERROR");
+    const id = context.params.id;
+
+    const data = (await request.json()) as Prisma.CourseResultUpdateInput;
+    try {
+      const check = await prisma.courseResult.findUnique({
+        where: {
+          id,
+        },
+      });
+      if (!check)
+        return nextReturn("Course's Result Not found", 400, "NOT_FOUND");
+      const result = await prisma.courseResult.update({
+        where: {
+          id,
+        },
+        data,
+      });
+      // await kv.del(CACHE_KEY.COURSE_RESULT);
+      return nextReturn(result);
+    } catch (err: any) {
+      return nextReturn(err?.message || err, 500, "INTERNAL_SERVER_ERROR");
+    }
+  } catch (_) {
+    console.log("PUT Error", _);
   }
 }
 
@@ -61,8 +66,8 @@ export async function DELETE(_: NextRequest, context: any) {
         id,
       },
     });
-    const paths: string[] = result.galleryImgs.map(img => filterFileDir(img));
-    await supabase.storage.from(bucketName).remove(paths)
+    const paths: string[] = result.galleryImgs.map((img) => filterFileDir(img));
+    await supabase.storage.from(bucketName).remove(paths);
     await kv.del(CACHE_KEY.COURSE_RESULT);
     return nextReturn(result);
   } catch (err: any) {
@@ -73,5 +78,5 @@ export async function DELETE(_: NextRequest, context: any) {
 const filterFileDir = (path: string) => {
   const match = path.match(/CCL_BUCKET\/(.+)$/);
   if (match) return match[1];
-  return path
-} 
+  return path;
+};

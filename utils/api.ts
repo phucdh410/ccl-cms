@@ -6,21 +6,34 @@ const nextReturn = (
   statusText?: string,
   headers?: any
 ) => {
-  if (status > 300 || status < 200) {
-    console.error("nextReturn error", JSON.stringify(payload));
-    // send error to sentry
-  }
-  if (headers) {
+  console.log("return");
+
+  try {
+    if (status > 300 || status < 200) {
+      console.error("nextReturn error", JSON.stringify(payload));
+      // send error to sentry
+
+      // co post man hok ong
+
+      return NextResponse.json(payload, {
+        status,
+        statusText: statusText,
+      });
+    }
+    if (headers) {
+      return NextResponse.json(payload, {
+        status,
+        statusText,
+        headers,
+      });
+    }
     return NextResponse.json(payload, {
       status,
       statusText,
-      headers,
     });
+  } catch (err) {
+    console.log("Return error", err);
   }
-  return NextResponse.json(payload, {
-    status,
-    statusText,
-  });
 };
 
 export { nextReturn };

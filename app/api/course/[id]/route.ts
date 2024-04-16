@@ -24,6 +24,7 @@ export async function GET(request: NextRequest, context: any) {
         },
       },
     });
+
     if (!course) return nextReturn("Course Not found", 400, "NOT_FOUND");
     return nextReturn(course);
   } catch (err: any) {
@@ -37,6 +38,8 @@ export async function GET(request: NextRequest, context: any) {
 export async function PUT(request: NextRequest, context: any) {
   const id = context.params.id;
 
+  console.log("Try uploading", id);
+
   try {
     const check = await prisma.course.findUnique({
       where: {
@@ -44,6 +47,9 @@ export async function PUT(request: NextRequest, context: any) {
       },
     });
     if (!check) return nextReturn("Course Not found", 400, "NOT_FOUND");
+
+    console.log("Check", check);
+
     const input = (await request.json()) as Prisma.CourseUpdateInput;
     console.log("input", input);
     const result = await prisma.course.update({
@@ -52,9 +58,11 @@ export async function PUT(request: NextRequest, context: any) {
       },
       data: input,
     });
-    await kv.del(CACHE_KEY.COURSE_RESULT);
+    // await kv.del(CACHE_KEY.COURSE_RESULT);
     return nextReturn(result);
   } catch (err: any) {
+    console.log("Update error", err);
+
     return nextReturn(err?.message || err, 500, "INTERNAL_SERVER_ERROR");
   }
 }
